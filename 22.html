@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英文名转日语片假名</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        input[type="file"] {
+            margin: 20px 0;
+        }
+
+        textarea {
+            width: calc(100% - 20px); /* 留出右侧空白 */
+            resize: none;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-right: 10px; /* 右侧空白 */
+        }
+
+        a {
+            display: block;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 18px;
+            color: blue;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        input {
+            font-size: 16px;
+        }
+
+        button {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>英文名转日语片假名</h1>
+        <input type="file" id="fileInput"/>
+        <button onclick="convertNames()">转换</button>
+        <h2>结果:</h2>
+        <textarea id="result" placeholder="片假名结果将显示在这里" rows="10"></textarea>
+        <a id="downloadLink" style="display: none;">下载输出文件</a>
+    </div>
+
+    <script>
+        let names = [];
+
+        document.getElementById('fileInput').addEventListener('change', handleFile, false);
+
+        function handleFile(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                names = XLSX.utils.sheet_to_json(worksheet, { header: 1 }).flat();
+                names = names.map(name => name.trim()).filter(name => name); // 清理空行
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        function convertToKatakana(name) {
+            const katakanaMap = {
+                'a': 'ア', 'i': 'イ', 'u': 'ウ', 'e': 'エ', 'o': 'オ',
+                'b': 'バ', 'c': 'カ', 'd': 'ダ', 'f': 'ファ',
+                'g': 'ガ', 'h': 'ハ', 'j': 'ジ', 'k': 'カ',
+                'l': 'ラ', 'm': 'マ', 'n': 'ナ', 'p': 'パ',
+                'q': 'ク', 'r': 'ラ', 's': 'サ', 't': 'タ',
+                'v': 'ヴァ', 'w': 'ワ', 'x': 'クス', 'y': 'ヤ', 'z': 'ザ'
+            };
+
+            let result = '';
+            name = name.toLowerCase();
+
+            for (let char of name) {
+                result += katakanaMap[char] || char; // 如果没有对应的片假名，则保留原字符
+            }
+
+            return result;
+        }
+
+        function convertNames() {
+            const katakanaNames = names.map(name => convertToKatakana(name)).join('\n');
+            document.getElementById("result").value = katakanaNames;
+            createDownloadLink(katakanaNames);
+        }
+
+        function createDownloadLink(content) {
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.getElementById('downloadLink');
+            downloadLink.href = url;
+            downloadLink.download = '片假名.txt';
+            downloadLink.style.display = 'block'; // 显示下载链接
+            downloadLink.innerText = '下载输出文件';
+        }
+    </script>
+</body>
+</html>
